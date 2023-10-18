@@ -35,7 +35,7 @@ class King:
             self.age += 1
             is_live = self.count_death()
             if not is_live:
-                print(f"King has died at the age of {self.age}...")
+                print(f"{self.name} has died at the age of {self.age}...")
             else:
                 return True
         else:
@@ -48,11 +48,11 @@ class King:
             "age": self.age,
             "age_when_dying": self.age_when_dying,
             "death_chance": self.death_chance,
-            "increasing_chance": self.increasing_chance
+            "increasing_chance": self.increasing_chance,
         }
 
     def __str__(self):
-        return f"name = {self.name}, age = {self.age} years, when_dying = {self.age_when_dying} years, death_chance = {self.death_chance}%, {'DIED' if self._died else 'Alive'}"
+        return f"name = {self.name}, age = {self.age} years, when_dying = {self.age_when_dying} years, death_chance = {self.death_chance}%, {'DEAD' if self._died else 'ALIVE'}"
 
 
 class Menu:
@@ -134,7 +134,7 @@ class Menu:
                 choose_king = int(choose_king)
                 result = list_kings[choose_king]
 
-            except [ValueError, IndexError]:
+            except Exception:
                 print("Invalid request.")
                 return cls.main_menu()
             return result
@@ -163,8 +163,9 @@ class KingCSVManager:
         with open(cls.file, "r", newline='') as king_csv:
             king_reader = csv.reader(king_csv, delimiter=';')
             for l in king_reader:
-                if name.lower().strip() in l[0].strip().lower():
-                    king_list.append(King(name=l[0], age=l[1], age_when_dying=l[2], death_chance=l[3], increasing_chance=l[4]))
+                if l and name.lower().strip() in l[0].strip().lower() or name == "any":
+                    l[5] = False if l[5] == "False" else True
+                    king_list.append(King(name=l[0], age=l[1], age_when_dying=l[2], death_chance=l[3], increasing_chance=l[4], died=l[5]))
         return king_list
 
     @classmethod
@@ -173,19 +174,21 @@ class KingCSVManager:
         king = cls.find_king(king.name) or False
 
         if not king:
-            with open(cls.file, "a", newline='') as king_csv:
+            with open(cls.file, "a", newline='', encoding="utf-8") as king_csv:
                 king_writer = csv.writer(king_csv, delimiter=';')
                 king_writer.writerow(info_to_write)
                 print("King was written. It will be saved after exiting program")
         else:
-            temp_csv = NamedTemporaryFile(mode="w", delete=False)
-            with open(cls.file) as king_csv, temp_csv:
+            temp_csv = NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")
+            with open(cls.file, "r", newline='') as king_csv, temp_csv:
                 reader = csv.reader(king_csv, delimiter=";")
                 writer = csv.writer(temp_csv, delimiter=";")
                 for line in reader:
-                    if line[0] == king[0].name:
+                    if line and line[0] == king[0].name:
                         writer.writerow(info_to_write)
                         print("Information about king was updated")
+                        continue
+                    writer.writerow(line)
             shutil.move(temp_csv.name, cls.file)
 
     @classmethod
@@ -209,10 +212,11 @@ def main():
             elif decision == '2':
                 result = king.grew_up()
                 if not result:
+                    KingCSVManager.save_king(king)
                     break
             else:
+                KingCSVManager.save_king(king)
                 break
-            KingCSVManager.save_king(king)
 
 
 if __name__ == '__main__':
