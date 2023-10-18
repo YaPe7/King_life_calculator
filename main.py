@@ -12,17 +12,38 @@ class King:
     def __init__(self, died=False, **kwargs):
         self.name = kwargs["name"]
         self._died = died
-        self.age = int(kwargs["age"])
-        self.age_when_dying = int(kwargs["age_when_dying"])
-        self.death_chance = int(kwargs["death_chance"])
-        self.increasing_chance = int(kwargs["increasing_chance"])
+        try:
+            self.age = int(kwargs["age"])
+            self.age_when_dying = int(kwargs["age_when_dying"])
+            self.death_chance = int(kwargs["death_chance"])
+            self.increasing_chance = int(kwargs["increasing_chance"])
+        except ValueError:
+            raise ValueError("Error when creating a king.")
+
+    def count_death(self):
+        if not self.age >= self.age_when_dying:
+            return True
+        death_num = randint(1, 100)
+        if death_num <= self.death_chance:
+            self._died = True
+            return False
+        self.death_chance += self.increasing_chance
+        return True
 
     def grew_up(self):
         if not self._died:
             self.age += 1
+            is_live = self.count_death()
+            if not is_live:
+                print(f"King has died at the age of {self.age}...")
+            else:
+                return True
+        else:
+            print("King is dead. Game over.")
+        return False
 
     def king_to_dict(self):
-        return  {
+        return {
             "name": self.name,
             "age": self.age,
             "age_when_dying": self.age_when_dying,
@@ -85,7 +106,12 @@ class Menu:
                 increasing_chance = int(input("How much will increase chance to die for a king? Skip if nothing. (Def: 5%): "))
             except ValueError:
                 increasing_chance = 5
-            return King(name=name, age_when_dying=age_when_dying, age=age, death_chance=death_chance, increasing_chance=increasing_chance)
+            king = King(name=name, age_when_dying=age_when_dying, age=age, death_chance=death_chance, increasing_chance=increasing_chance)
+            print(f"Do you want to save? {king}")
+            decision = input("y/n: ")
+            if decision == "y":
+                return king
+            return None
 
     @classmethod
     def find_king(cls):
@@ -113,8 +139,8 @@ class Menu:
                 return cls.main_menu()
             return result
 
-
-    def edit_king(self, king: King):
+    @classmethod
+    def edit_king(cls, king: King):
         king_dict = king.king_to_dict()
         for key, value in king_dict.items():
             print(f"Change {key}?")
@@ -122,9 +148,7 @@ class Menu:
             if decision == 'y':
                 new_value = input("Input new value: ")
                 king_dict[key] = new_value
-
-
-
+        return King(**king_dict)
 
 
 class KingCSVManager:
@@ -139,7 +163,7 @@ class KingCSVManager:
         with open(cls.file, "r", newline='') as king_csv:
             king_reader = csv.reader(king_csv, delimiter=';')
             for l in king_reader:
-                if name in l[0]:
+                if name.lower().strip() in l[0].strip().lower():
                     king_list.append(King(name=l[0], age=l[1], age_when_dying=l[2], death_chance=l[3], increasing_chance=l[4]))
         return king_list
 
@@ -159,7 +183,6 @@ class KingCSVManager:
                 reader = csv.reader(king_csv, delimiter=";")
                 writer = csv.writer(temp_csv, delimiter=";")
                 for line in reader:
-                    print(line[0], king[0])
                     if line[0] == king[0].name:
                         writer.writerow(info_to_write)
                         print("Information about king was updated")
@@ -173,14 +196,23 @@ class KingCSVManager:
 
 def main():
     while True:
-        try:
-            king = Menu.main_menu()
-        except ValueError:
-            print("Error when creating object of a King")
+        king = Menu.main_menu()
+        if king is None:
+            print("Aborted.")
             continue
-        print(king)
-        KingCSVManager.save_king(king)
-
+        while True:
+            print(king)
+            print("What to do next? 1 - Change king, 2 - Live 1 year, 3 - Abort")
+            decision = input(": ")
+            if decision == '1':
+                king = Menu.edit_king(king)
+            elif decision == '2':
+                result = king.grew_up()
+                if not result:
+                    break
+            else:
+                break
+            KingCSVManager.save_king(king)
 
 
 if __name__ == '__main__':
