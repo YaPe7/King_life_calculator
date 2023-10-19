@@ -22,7 +22,7 @@ class King:
 
     @property
     def info_to_write(self):
-        return (self.name, self.age, self.age_when_dying, self.death_chance, self.increasing_chance, self._died)
+        return self.name, self.age, self.age_when_dying, self.death_chance, self.increasing_chance, self._died
 
     def count_death(self):
         if not self.age >= self.age_when_dying:
@@ -88,7 +88,7 @@ class Menu:
         return cls.main_menu()
 
     @classmethod
-    def create_king(cls) -> King:
+    def create_king(cls) -> King | None:
         while True:
             name = input("A King's name: ")
             try:
@@ -119,7 +119,6 @@ class Menu:
             decision = input("y/n: ")
             if decision == "y":
                 return king
-            return None
 
     @classmethod
     def find_king(cls):
@@ -177,20 +176,24 @@ class KingCSVManager:
         return king_list
 
     @classmethod
-    def _manipulate_king_info(cls, king: King, delete=False):
+    def _manipulate_king_info(cls, king: King, info_to_write=False, delete=False):
         temp_csv = NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")
         with open(cls.file, "r", newline='') as king_csv, temp_csv:
             reader = csv.reader(king_csv, delimiter=";")
             writer = csv.writer(temp_csv, delimiter=";")
             for line in reader:
                 if not (line and line[0] == king.name):
+                    print("Line is written")
                     writer.writerow(line)
-                else:
-                    writer.writerow(king.info_to_write())
+                    continue
+                if not delete:
+                    print(king.info_to_write)
+                    writer.writerow(info_to_write)
                     print("Information about king was updated")
                     continue
-                writer.writerow(line)
+                print("King was deleted.")
         shutil.move(temp_csv.name, cls.file)
+
     @classmethod
     def save_king(cls, king: King):
         info_to_write = king.info_to_write
@@ -202,25 +205,15 @@ class KingCSVManager:
                 king_writer.writerow(info_to_write)
                 print("King was written. It will be saved after exiting program")
         else:
-            temp_csv = NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")
-            with open(cls.file, "r", newline='') as king_csv, temp_csv:
-                reader = csv.reader(king_csv, delimiter=";")
-                writer = csv.writer(temp_csv, delimiter=";")
-                for line in reader:
-                    if line and line[0] == king[0].name:
-                        writer.writerow(info_to_write)
-                        print("Information about king was updated")
-                        continue
-                    writer.writerow(line)
-            shutil.move(temp_csv.name, cls.file)
+            cls._manipulate_king_info(king[0], info_to_write)
 
     @classmethod
     def delete_king(cls, king: King):
-        pass
+        cls._manipulate_king_info(king, delete=True)
 
     @classmethod
     def clear_file(cls):
-        file = open(cls.file, "w").close()
+        open(cls.file, "w").close()
         print("File cleared.")
 
 
@@ -238,8 +231,8 @@ def main():
                 king = Menu.edit_king(king)
             elif decision == '2':
                 result = king.grew_up()
+                KingCSVManager.save_king(king)
                 if not result:
-                    KingCSVManager.save_king(king)
                     break
             else:
                 KingCSVManager.save_king(king)
