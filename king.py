@@ -16,7 +16,7 @@ class King:
 
     @property
     def info_to_write(self):
-        return self.name, self.age, self.age_when_dying, self.death_chance, self.increasing_chance, self._died
+        return self.name, self.age, self.age_when_dying, self.death_chance, self.increasing_chance, self._died, self.group
 
     def count_death(self):
         if not self.age >= self.age_when_dying:

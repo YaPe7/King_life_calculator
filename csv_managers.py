@@ -18,8 +18,8 @@ class GroupCSVManager:
     def return_all_groups(cls):
         group_list = []
         with open(cls.groups, "r") as groups_file:
+            groups_file = csv.reader(groups_file, delimiter=";")
             for line in groups_file:
-                line = line.strip().split(";")
                 group_list.append((line[0], line[1]))
         return group_list
 
@@ -59,7 +59,6 @@ class KingCSVManager:
                     writer.writerow(line)
                     continue
                 if not delete:
-                    print(king.info_to_write)
                     writer.writerow(info_to_write)
                     print("Information about king was updated")
                     continue
