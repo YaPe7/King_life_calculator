@@ -29,6 +29,16 @@ class GroupCSVManager:
         return [group[0] for group in group_list]
 
 
+    @classmethod
+    def find_groups(cls, group_name: str):
+        group_name = group_name.lower()
+        groups = cls.return_all_groups()
+        groups_found = []
+        for group in groups:
+            if group_name in (group[0], 'any'):
+                groups_found.append(group)
+        return groups_found
+
 class KingCSVManager:
     file = "kings.csv"
 

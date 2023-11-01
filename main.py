@@ -11,11 +11,10 @@ class Menu:
         print("Menu. 1 - Create a King, 2 - Choose the King, 3 - Clear kings, 4 - Delete the King, 5 - King groups 6 - Exit")
         decision = input("Option: ")
         if decision == "1":
-            return cls.create_king()
+            cls.create_king()
         elif decision == "2":
             king = cls.find_king()
-
-            return king
+            result = cls.king_menu(king)
         elif decision == "3":
             print("Are you sure? There is no way to backup data in this version.")
             confirm = True if input("y/n: ") == "y" else False
@@ -25,8 +24,7 @@ class Menu:
             king = cls.find_king()
             KingCSVManager.delete_king(king)
         elif decision == "5":
-            pass
-
+            cls.find_king_groups()
 
         elif decision == "6":
             raise KeyboardInterrupt
@@ -34,6 +32,25 @@ class Menu:
             print("Invalid command.")
         return cls.main_menu()
 
+    @classmethod
+    def find_king_groups(cls):
+        group_to_find = input("Enter a group name or a part of it: ")
+        groups = GroupCSVManager.find_groups(group_to_find)
+        if groups:
+            i = 0
+            for group in groups:
+                str_group = f"id {i} || name = {group[0]}, year = {group[1]}"
+                print(str_group)
+                print(len(str_group) * "=")
+                i += 1
+        try:
+            group_id = int(input())
+            if group_id >= len(groups) or group_id < 0:
+                raise ValueError
+        except ValueError:
+            print("You wrote not a number. Aborting...")
+            return False
+        return groups[group_id]
     @classmethod
     def create_king(cls) -> King | None:
         while True:
@@ -62,7 +79,8 @@ class Menu:
             except ValueError:
                 increasing_chance = 5
 
-            group = input("In which group will be a king? Default group: \"default\"")
+            print("In which group will be a king? Default group: \"default\"")
+            group = input(": ")
             if group not in GroupCSVManager.return_group_names():
                 group = "default"
             king = King(name=name, age_when_dying=age_when_dying, age=age, death_chance=death_chance, increasing_chance=increasing_chance, group=group)
@@ -70,7 +88,6 @@ class Menu:
             decision = input("y/n: ")
             if decision == "y":
                 KingCSVManager.save_king(king)
-            return Menu.main_menu()
 
     @classmethod
     def find_king(cls):
@@ -108,6 +125,27 @@ class Menu:
                 new_value = input("Input new value: ")
                 king_dict[key] = new_value
         return King(**king_dict)
+
+    @classmethod
+    def king_menu(cls, king: King):
+        if king is None:
+            print("Aborted.")
+            return False
+        while True:
+            print(king)
+            print("What to do next? 1 - Change king, 2 - Live 1 year, 3 - Abort")
+            decision = input(": ")
+            if decision == '1':
+                king = Menu.edit_king(king)
+            elif decision == '2':
+                result = king.grew_up()
+                KingCSVManager.save_king(king)
+                if not result:
+                    break
+            else:
+                KingCSVManager.save_king(king)
+                break
+        return True
 
 
 def main():
