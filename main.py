@@ -1,5 +1,6 @@
 import sys
 from king import King
+from group import Group
 from csv_managers import GroupCSVManager, KingCSVManager
 
 
@@ -8,7 +9,7 @@ class Menu:
 
     @classmethod
     def main_menu(cls):
-        print("Menu. 1 - Create a King, 2 - Choose the King, 3 - Clear kings, 4 - Delete the King, 5 - King groups 6 - Exit")
+        print("Menu. 1 - Create a King, 2 - Choose the King, 3 - Clear kings, 4 - Delete the King, 5 - King groups, 6 - Exit")
         decision = input("Option: ")
         if decision == "1":
             cls.create_king()
@@ -24,7 +25,16 @@ class Menu:
             king = cls.find_king()
             KingCSVManager.delete_king(king)
         elif decision == "5":
-            cls.find_king_groups()
+            group = cls.find_king_groups()
+            group = Group(group[0], group[1])
+            sub_menu = input("1 - manipulate group, 2 - delete group, 3 - Back to menu")
+            if sub_menu == '1':
+                cls.manipulate_king_group(group)
+            elif sub_menu == '2':
+                GroupCSVManager.delete_group(group)
+            else:
+                return cls.main_menu()
+
 
         elif decision == "6":
             raise KeyboardInterrupt
@@ -48,9 +58,26 @@ class Menu:
             if group_id >= len(groups) or group_id < 0:
                 raise ValueError
         except ValueError:
-            print("You wrote not a number. Aborting...")
+            print("You didn't write a number. Aborting...")
             return False
         return groups[group_id]
+
+    @classmethod
+    def manipulate_king_group(cls, group: Group):
+        while True:
+            menu = input("What to do next with a group? 1 - Live one year, 2 - Add a king, 3 - Back to menu")
+            if menu not in ('1', '2'):
+                break
+            elif menu == '1':
+                group.live_one_year()
+            elif menu == '2':
+                king = cls.find_king()
+                group.add_kings(king)
+            GroupCSVManager.save_group(group)
+
+        return cls.main_menu()
+
+
     @classmethod
     def create_king(cls) -> King | None:
         while True:

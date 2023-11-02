@@ -2,6 +2,7 @@ import shutil
 import os
 import csv
 from king import King
+from group import Group
 from tempfile import NamedTemporaryFile
 
 
@@ -38,6 +39,40 @@ class GroupCSVManager:
             if group_name in (group[0], 'any'):
                 groups_found.append(group)
         return groups_found
+
+    @classmethod
+    def save_group(cls, group: Group):
+        info_to_write = group.info_to_write
+        group = cls.find_groups(group.name) or False
+
+        if not group:
+            with open(cls.groups, "a", newline='', encoding="utf-8") as groups_file:
+                king_writer = csv.writer(groups_file, delimiter=';')
+                king_writer.writerow(info_to_write)
+                print("King was written. It will be saved after exiting program")
+        else:
+            cls._manipulate_king_info(group[0], info_to_write)
+
+    @classmethod
+    def _manipulate_group_info(cls, group: Group, info_to_write, delete=False):
+        temp_csv = NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")
+        with open(cls.groups, "r", newline='') as group_csv, temp_csv:
+            reader = csv.reader(group_csv, delimiter=";")
+            writer = csv.writer(temp_csv, delimiter=";")
+            for line in reader:
+                if not (line and line[0] == group.name):
+                    print("Line is written")
+                    writer.writerow(line)
+                    continue
+                if not delete:
+                    writer.writerow(info_to_write)
+                    print("Information about group was updated")
+                    continue
+                print("Group was deleted.")
+        shutil.move(temp_csv.name, cls.groups)
+
+    def delete_group(cls, group: Group):
+        cls._manipulate_group_info(group, delete=True)
 
 class KingCSVManager:
     file = "kings.csv"
