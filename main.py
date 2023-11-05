@@ -6,6 +6,7 @@ from csv_managers import GroupCSVManager, KingCSVManager
 
 class Menu:
     is_king_chosen = False
+    GroupCSVManager._check_default_file()
 
     @classmethod
     def main_menu(cls):
@@ -26,16 +27,11 @@ class Menu:
             KingCSVManager.delete_king(king)
         elif decision == "5":
             group = cls.find_king_groups()
-            group = Group(group[0], group[1])
-            sub_menu = input("1 - manipulate group, 2 - delete group, 3 - Back to menu")
-            if sub_menu == '1':
-                cls.manipulate_king_group(group)
-            elif sub_menu == '2':
-                GroupCSVManager.delete_group(group)
-            else:
+            if not group:
                 return cls.main_menu()
-
-
+            group = Group(group[0], group[1])
+            group.add_kings(KingCSVManager.return_kings_by_groups(group))
+            cls.king_groups_info(group)
         elif decision == "6":
             raise KeyboardInterrupt
         else:
@@ -43,8 +39,21 @@ class Menu:
         return cls.main_menu()
 
     @classmethod
+    def king_groups_info(cls, group: Group):
+        print("1 - manipulate group, 2 - delete group, 3 - Back to menu")
+        sub_menu = input(": ")
+        if sub_menu == '1':
+            cls.manipulate_king_group(group)
+        elif sub_menu == '2':
+            GroupCSVManager.delete_group(group)
+        else:
+            return cls.main_menu()
+
+    @classmethod
     def find_king_groups(cls):
         group_to_find = input("Enter a group name or a part of it: ")
+        if not group_to_find:
+            group_to_find = "any"
         groups = GroupCSVManager.find_groups(group_to_find)
         if groups:
             i = 0
@@ -53,6 +62,9 @@ class Menu:
                 print(str_group)
                 print(len(str_group) * "=")
                 i += 1
+        else:
+            print("Nothing.")
+            return False
         try:
             group_id = int(input())
             if group_id >= len(groups) or group_id < 0:
@@ -65,17 +77,27 @@ class Menu:
     @classmethod
     def manipulate_king_group(cls, group: Group):
         while True:
-            menu = input("What to do next with a group? 1 - Live one year, 2 - Add a king, 3 - Back to menu")
-            if menu not in ('1', '2'):
-                break
-            elif menu == '1':
+            print("Group:", group)
+            print("What to do next with a group? 1 - Live one year, 2 - Add a king, 3 - change year, 4 - Back")
+            menu = input(": ")
+            if menu == '1':
                 group.live_one_year()
+                KingCSVManager.save_king(group.kings)
             elif menu == '2':
                 king = cls.find_king()
                 group.add_kings(king)
+            elif menu == '3':
+                new_value = input("Write new year: ")
+                result = group.change_year(new_value)
+                if result:
+                    print("Year was successfully changed. New value is:", group.year)
+                else:
+                    print("Error when changing a value.")
+            else:
+                break
             GroupCSVManager.save_group(group)
 
-        return cls.main_menu()
+        return cls.king_groups_info(group)
 
 
     @classmethod
@@ -115,6 +137,7 @@ class Menu:
             decision = input("y/n: ")
             if decision == "y":
                 KingCSVManager.save_king(king)
+            return king
 
     @classmethod
     def find_king(cls):

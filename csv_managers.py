@@ -16,6 +16,13 @@ class GroupCSVManager:
             print("Group file created.")
 
     @classmethod
+    def _check_default_file(cls):
+        groups = cls.return_group_names()
+        if "default" not in groups:
+            with open(cls.groups, "w") as groups_file:
+                groups_file.write("default;0\n")
+
+    @classmethod
     def return_all_groups(cls):
         group_list = []
         with open(cls.groups, "r") as groups_file:
@@ -51,7 +58,9 @@ class GroupCSVManager:
                 king_writer.writerow(info_to_write)
                 print("King was written. It will be saved after exiting program")
         else:
-            cls._manipulate_king_info(group[0], info_to_write)
+            group = group[0]
+            group = Group(group[0], group[1])
+            cls._manipulate_group_info(group, info_to_write)
 
     @classmethod
     def _manipulate_group_info(cls, group: Group, info_to_write, delete=False):
@@ -61,18 +70,21 @@ class GroupCSVManager:
             writer = csv.writer(temp_csv, delimiter=";")
             for line in reader:
                 if not (line and line[0] == group.name):
-                    print("Line is written")
+                    # print("Line is written")
                     writer.writerow(line)
                     continue
                 if not delete:
                     writer.writerow(info_to_write)
-                    print("Information about group was updated")
+                    # print("Information about group was updated")
                     continue
-                print("Group was deleted.")
+                if group.name == 'default':
+                    writer.writerow(("default", 0))
+                # print("Group was deleted.")
         shutil.move(temp_csv.name, cls.groups)
 
     def delete_group(cls, group: Group):
         cls._manipulate_group_info(group, delete=True)
+
 
 class KingCSVManager:
     file = "kings.csv"
@@ -82,14 +94,16 @@ class KingCSVManager:
             print("File created.")
 
     @classmethod
-    def find_king(cls, name) -> list:
+    def find_king(cls, name='any') -> list:
         king_list = []
         with open(cls.file, "r", newline='') as king_csv:
             king_reader = csv.reader(king_csv, delimiter=';')
             for l in king_reader:
+                if not l:
+                    continue
                 if l and name.lower().strip() in l[0].strip().lower() or name == "any":
                     l[5] = False if l[5] == "False" else True
-                    king_list.append(King(name=l[0], age=l[1], age_when_dying=l[2], death_chance=l[3], increasing_chance=l[4], died=l[5]))
+                    king_list.append(King(name=l[0], age=l[1], age_when_dying=l[2], death_chance=l[3], increasing_chance=l[4], died=l[5], group=l[6]))
         return king_list
 
     @classmethod
@@ -100,28 +114,42 @@ class KingCSVManager:
             writer = csv.writer(temp_csv, delimiter=";")
             for line in reader:
                 if not (line and line[0] == king.name):
-                    print("Line is written")
+                    # print("Line is written")
                     writer.writerow(line)
                     continue
                 if not delete:
                     writer.writerow(info_to_write)
-                    print("Information about king was updated")
+                    # print("Information about king was updated")
                     continue
-                print("King was deleted.")
+                # print("King was deleted.")
         shutil.move(temp_csv.name, cls.file)
 
     @classmethod
-    def save_king(cls, king: King):
-        info_to_write = king.info_to_write
-        king = cls.find_king(king.name) or False
+    def save_king(cls, kings: list | King):
+        if type(kings) == King:
+            kings = [kings]
+        for king in kings:
+            info_to_write = king.info_to_write
+            king = cls.find_king(king.name) or False
 
-        if not king:
-            with open(cls.file, "a", newline='', encoding="utf-8") as king_csv:
-                king_writer = csv.writer(king_csv, delimiter=';')
-                king_writer.writerow(info_to_write)
-                print("King was written. It will be saved after exiting program")
-        else:
-            cls._manipulate_king_info(king[0], info_to_write)
+            if not king:
+                with open(cls.file, "a", newline='', encoding="utf-8") as king_csv:
+                    king_writer = csv.writer(king_csv, delimiter=';')
+                    king_writer.writerow(info_to_write)
+                    # print("King was written. It will be saved after exiting program")
+            else:
+                cls._manipulate_king_info(king[0], info_to_write)
+
+    @classmethod
+    def return_kings_by_groups(cls, group: Group):
+        kings = cls.find_king()
+        sorted_kings = []
+        # print(kings)
+        for king in kings:
+            if group.name == king.group:
+                sorted_kings.append(king)
+        return sorted_kings
+
 
     @classmethod
     def delete_king(cls, king: King):

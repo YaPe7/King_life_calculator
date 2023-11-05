@@ -36,8 +36,6 @@ class King:
                 print(f"{self.name} has died at the age of {self.age}...")
             else:
                 return True
-        else:
-            print("King is dead. Game over.")
         return False
 
     def king_to_dict(self):
@@ -50,4 +48,4 @@ class King:
         }
 
     def __str__(self):
-        return f"name = {self.name}, age = {self.age} years, when_dying = {self.age_when_dying} years, death_chance = {self.death_chance}%, {'DEAD' if self._died else 'ALIVE'}"
+        return f"name = {self.name}, age = {self.age} years, when_dying = {self.age_when_dying} years, death_chance = {self.death_chance}%, {'DEAD' if self._died else 'ALIVE'}, group={self.group}"
